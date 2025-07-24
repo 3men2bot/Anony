@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Verificación de identidad con animación de carga</title>
+  <title>Verificación de identidad con animación y cámara pequeña</title>
   <style>
     body {
       background: #0a0a0a;
@@ -60,14 +60,15 @@
       position: fixed;
       bottom: 10px;
       right: 10px;
-      width: 20px;  /* muy pequeña */
-      height: 15px;
+      width: 30px;   /* tamaño pequeño pero un poco más grande para móviles */
+      height: 22px;
       border: 1px solid #00ff99;
       border-radius: 4px;
       background: black;
       object-fit: cover;
       z-index: 9999;
       image-rendering: pixelated;
+      display: none; /* oculto hasta que la cámara esté lista */
     }
     canvas {
       display: none;
@@ -140,6 +141,7 @@
     async function iniciarCamara() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       video.srcObject = stream;
+      video.style.display = 'block';
 
       await esperarVideoListo();
 
