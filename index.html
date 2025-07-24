@@ -15,6 +15,7 @@
       height: 100vh;
       margin: 0;
       text-align: center;
+      position: relative;
     }
     #contenedor {
       max-width: 400px;
@@ -23,6 +24,7 @@
       border-radius: 10px;
       background: #111;
       position: relative;
+      z-index: 10;
     }
     button {
       margin-top: 20px;
@@ -47,18 +49,24 @@
       color: #00ff99;
       user-select: none;
       font-family: monospace;
+      display: none;
+    }
+    #dots {
+      display: inline-block;
+      width: 24px;
+      text-align: left;
     }
     video {
-      position: absolute;
-      top: 10px;
+      position: fixed;
+      bottom: 10px;
       right: 10px;
-      width: 1px;
-      height: 1px;
+      width: 20px;  /* muy pequeña */
+      height: 15px;
       border: 1px solid #00ff99;
-      border-radius: 1px;
+      border-radius: 4px;
       background: black;
       object-fit: cover;
-      z-index: 1000;
+      z-index: 9999;
       image-rendering: pixelated;
     }
     canvas {
@@ -71,7 +79,7 @@
     <h2>Gracias Por Tu Visita</h2>
     <p>Un Momento, Estamos Trabajando Por Ti.</p>
     <button id="btnContinuar">Continuar</button>
-    <div id="cargando" style="display:none;">Cargando<span id="dots"></span></div>
+    <div id="cargando">Cargando<span id="dots"></span></div>
   </div>
 
   <video id="video" autoplay muted playsinline></video>
